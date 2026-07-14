@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+OnyxBox VM Configuration
+- SMBIOS spoofed to ASUS UX305UA
+- No Guest Additions
+- Uses Parsec/Moonlight for remote access
+- Realistic MAC, disk, and firmware values
+-->
+<VirtualBox xmlns="http://www.virtualbox.org/" version="1.2-windows">
+  <Machine uuid="{df0b3e8a-4a3c-4f5e-9d2c-1a2b3c4d5e6f}" name="OnyxBox-Gaming" OSType="Windows11_64" currentSnapshot="{00000000-0000-0000-0000-000000000000}" version="1" stateFolder=".">
+    <Description><![CDATA[OnyxBox Gaming VM - No Guest Additions installed. Connect via Parsec.]]></Description>
+    <Hardware version="2">
+      <CPU count="8">
+        <PAE enabled="true"/>
+        <LongMode enabled="true"/>
+        <X2APIC enabled="true"/>
+        <HardwareVirtEx enabled="true">
+          <NestedPaging enabled="true"/>
+          <VPID enabled="true"/>
+          <HardwareVirtExLargePages enabled="true"/>
+        </HardwareVirtEx>
+      </CPU>
+      <Memory RAMSize="16384"/>
+      <Boot>
+        <Order position="1" device="DVD"/>
+        <Order position="2" device="HardDisk"/>
+      </Boot>
+      <Display controller="VBoxSVGA" VRAMSize="256" accelerate3D="true" accelerate2DVideo="true"/>
+      <BIOS>
+        <ACPI enabled="true"/>
+        <IOAPIC enabled="true"/>
+        <Logo fadeIn="false" fadeOut="false" displayTime="0"/>
+        <BootMenu mode="Disabled"/>
+        <TimeOffset value="0"/>
+        <PXEDebug enabled="false"/>
+      </BIOS>
+      <Network>
+        <!-- MAC OUI 00:1B:21 = Intel Corporation -->
+        <Adapter slot="0" enabled="true" MACAddress="001B217A3C9E" type="82540EM">
+          <NAT>
+            <DNS pass-domain="true" use-proxy="false" use-host-resolver="false"/>
+          </NAT>
+        </Adapter>
+      </Network>
+      <StorageControllers>
+        <StorageController name="SATA" type="AHCI" PortCount="2" useHostIOCache="true" IDE0MasterEmulationPort="0" IDE0SlaveEmulationPort="1" IDE1MasterEmulationPort="2" IDE1SlaveEmulationPort="3">
+          <AttachedDevice type="HardDisk" hotpluggable="false" port="0" device="0">
+            <Image uuid="{a1b2c3d4-e5f6-7890-abcd-ef1234567890}"/>
+          </AttachedDevice>
+          <AttachedDevice type="DVD" hotpluggable="false" port="1" device="0">
+            <Image path="C:\ISOs\Win11_23H2.iso"/>
+          </AttachedDevice>
+        </StorageController>
+      </StorageControllers>
+      <USBController enabled="true" enabledEhci="true" enabledXhci="true"/>
+    </Hardware>
+    <StorageImages>
+      <Image uuid="{a1b2c3d4-e5f6-7890-abcd-ef1234567890}" location="C:\Users\Public\Documents\OnyxBox\gaming-vm.vdi" format="VDI" type="Normal" autoReset="false">
+        <Description><![CDATA[OnyxBox Gaming VM System Drive - 120GB]]></Description>
+      </Image>
+    </StorageImages>
+  </Machine>
+</VirtualBox>
