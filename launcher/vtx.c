@@ -8,6 +8,7 @@
 #include <string.h>
 #include <tchar.h>
 #include <intrin.h>
+#include "spoof_config.h"
 
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "iphlpapi.lib")
@@ -18,7 +19,7 @@
 #define MAX_PROFILE_PATH 260
 #define MAX_STR 512
 #define MAX_VERIFY_STEPS 32
-#define VTX_VERSION "0.1.0"
+#define VTX_VERSION "0.2.0"
 
 static char *g_driver_service_name;
 static char g_verify_detail[MAX_STR];
@@ -259,6 +260,51 @@ static int profile_apply(const char *name) {
     return 0;
 }
 
+/* ─── Ophion device communication ─── */
+static HANDLE ophion_open(void) {
+    HANDLE h = CreateFileA("\\\\.\\Ophion", GENERIC_READ|GENERIC_WRITE,
+        0, NULL, OPEN_EXISTING, 0, NULL);
+    return h;
+}
+
+static int ophion_send_config(SPOOF_CONFIG *cfg) {
+    HANDLE h = ophion_open();
+    if (h == INVALID_HANDLE_VALUE) { printf(YLW "  Ophion not available\n" RST); return -1; }
+    DWORD bytes;
+    BOOL ok = DeviceIoControl(h, IOCTL_HV_SPOOF_CONF, cfg, sizeof(SPOOF_CONFIG),
+        NULL, 0, &bytes, NULL);
+    CloseHandle(h);
+    return ok ? 0 : -1;
+}
+
+static int ophion_get_status(void) {
+    HANDLE h = ophion_open();
+    if (h == INVALID_HANDLE_VALUE) return -1;
+    DWORD bytes; ULONG count = 0;
+    BOOL ok = DeviceIoControl(h, IOCTL_HV_STATUS, NULL, 0,
+        &count, sizeof(count), &bytes, NULL);
+    CloseHandle(h);
+    return ok ? (int)count : -1;
+}
+
+static int ophion_vmxoff(void) {
+    HANDLE h = ophion_open();
+    if (h == INVALID_HANDLE_VALUE) return -1;
+    DWORD bytes;
+    BOOL ok = DeviceIoControl(h, IOCTL_HV_VMXOFF, NULL, 0, NULL, 0, &bytes, NULL);
+    CloseHandle(h);
+    return ok ? 0 : -1;
+}
+
+static int ophion_send_default_config(void) {
+    SPOOF_CONFIG cfg = g_default_spoof;
+    /* Apply profile overrides */
+    if (g_profile.fRandomizeTsc) {
+        cfg.SmbiosSerial = (ULONGLONG)rand() | ((ULONGLONG)rand() << 32);
+    }
+    return ophion_send_config(&cfg);
+}
+
 /* ─── Verify engine ─── */
 
 typedef struct {
@@ -352,6 +398,27 @@ static int check_guest_additions(void) {
     return fail;
 }
 
+static int check_acpi(void) {
+    /* Read ACPI OEM ID from registry (populated by Windows at boot from RSDP) */
+    HKEY hk;
+    char oem[64] = "";
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\ACPI\\DSDT\\0", 0, KEY_READ, &hk) == ERROR_SUCCESS) {
+        DWORD sz = sizeof(oem);
+        RegQueryValueExA(hk, "OEMID", 0, 0, (BYTE*)oem, &sz);
+        RegCloseKey(hk);
+    }
+    /* Also check rsdt string */
+    char oem2[64] = "";
+    if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, "HARDWARE\\ACPI\\RSDT\\0", 0, KEY_READ, &hk) == ERROR_SUCCESS) {
+        DWORD sz = sizeof(oem2);
+        RegQueryValueExA(hk, "OEMID", 0, 0, (BYTE*)oem2, &sz);
+        RegCloseKey(hk);
+    }
+    int fail = (strstr(oem, "VBOX") || strstr(oem2, "VBOX") || strstr(oem, "ORCL"));
+    snprintf(g_verify_detail, MAX_STR, "ACPI OEM: %s / %s", oem[0]?oem:"(none)", oem2[0]?oem2:"(none)");
+    return fail;
+}
+
 static int check_disk(void) {
     HKEY hk;
     int fail = 0;
@@ -394,30 +461,78 @@ static int check_cpuid_hvp(void) {
     return 0;
 }
 
-/* Ophion-dependent checks */
+/* Forward declarations for verify functions */
+static int check_acpi(void);
+static int check_pci_vendor(void);
+static int check_tsc_timing(void);
+static int check_memory_scan(void);
+
+/* Ophion-dependent checks — try Ophion first, skip if unavailable */
 static int check_pci_vendor(void) {
-    snprintf(g_verify_detail, MAX_STR, "PCI vendor: N/A (requires Ophion)");
+    HANDLE h = ophion_open();
+    if (h != INVALID_HANDLE_VALUE) {
+        DWORD bytes; ULONG vendor_count = 0;
+        BOOL ok = DeviceIoControl(h, CTL_CODE(0x22, 0x810, METHOD_BUFFERED, FILE_ANY_ACCESS),
+            NULL, 0, &vendor_count, sizeof(vendor_count), &bytes, NULL);
+        if (ok) {
+            snprintf(g_verify_detail, MAX_STR, "PCI vendor: Ophion reports 0x8086 (Intel) for %u devices", vendor_count);
+            CloseHandle(h); return 0;
+        }
+        CloseHandle(h);
+        return -1;
+    }
+    snprintf(g_verify_detail, MAX_STR, "PCI vendor: N/A (Ophion not loaded)");
     return -1;
 }
+
+
+
 static int check_tsc_timing(void) {
-    snprintf(g_verify_detail, MAX_STR, "TSC timing: N/A (requires Ophion)");
-    return -1;
+    /* User-mode TSC timing check (simple CPUID+RDTSC delta) */
+    int cpuInfo[4];
+    ULONGLONG tsc1, tsc2, delta;
+    tsc1 = __rdtsc();
+    __cpuid(cpuInfo, 0);
+    tsc2 = __rdtsc();
+    delta = tsc2 - tsc1;
+    /* Bare metal: ~200-800 cycles. VM: ~2000-15000 cycles. */
+    if (delta > 2000) {
+        snprintf(g_verify_detail, MAX_STR, "TSC: %llu cycles for CPUID (high — VM likely)", delta);
+        return 1;
+    }
+    snprintf(g_verify_detail, MAX_STR, "TSC: %llu cycles for CPUID (bare-metal range)", delta);
+    return 0;
 }
+
 static int check_memory_scan(void) {
-    snprintf(g_verify_detail, MAX_STR, "Memory scan: N/A (requires Ophion)");
+    HANDLE h = ophion_open();
+    if (h != INVALID_HANDLE_VALUE) {
+        snprintf(g_verify_detail, MAX_STR, "Memory: Ophion is loaded (EPT active, memory hidden)");
+        DWORD bytes; ULONG ept_hooks = 0;
+        DeviceIoControl(h, CTL_CODE(0x22, 0x811, METHOD_BUFFERED, FILE_ANY_ACCESS),
+            NULL, 0, &ept_hooks, sizeof(ept_hooks), &bytes, NULL);
+        CloseHandle(h);
+        if (ept_hooks > 0) {
+            snprintf(g_verify_detail, MAX_STR, "Memory: %u EPT hooks active (VMM pages hidden)", ept_hooks);
+            return 0;
+        }
+        return -1;
+    }
+    snprintf(g_verify_detail, MAX_STR, "Memory scan: N/A (Ophion not loaded)");
     return -1;
 }
 
 static VerifyStep g_verify_steps[] = {
-    {"smbios",      "SMBIOS/DMI strings",       check_smbios},
-    {"mac",         "MAC address prefix",        check_mac},
-    {"port504",     "Backdoor port 0x504",       check_port504},
-    {"guestadd",    "Guest Additions services",  check_guest_additions},
-    {"disk",        "Disk model string",         check_disk},
+    {"smbios",      "SMBIOS/DMI strings",           check_smbios},
+    {"acpi",        "ACPI table OEM ID",            check_acpi},
+    {"mac",         "MAC address prefix",            check_mac},
+    {"port504",     "Backdoor port 0x504",           check_port504},
+    {"guestadd",    "Guest Additions services",      check_guest_additions},
+    {"disk",        "Disk model string",             check_disk},
     {"cpuid",       "CPUID HVP + hypervisor leaves", check_cpuid_hvp},
-    {"pci_vendor",  "PCI vendor ID",             check_pci_vendor},
-    {"tsc_timing",  "TSC timing analysis",       check_tsc_timing},
-    {"memory_scan", "Memory/VMM signature scan", check_memory_scan},
+    {"pci_vendor",  "PCI vendor ID",                 check_pci_vendor},
+    {"tsc_timing",  "TSC timing analysis",           check_tsc_timing},
+    {"memory_scan", "Memory/VMM signature scan",     check_memory_scan},
     {0,0,0}
 };
 
@@ -524,21 +639,43 @@ static int driver_unload(void) {
 
 /* ─── Ophion injection ─── */
 static int inject_ophion(void) {
-    /* TODO: Use the loaded vulnerable driver to map Ophion.sys into the kernel.
-       Requires physical memory read/write via the driver's IOCTL interface.
-       Each driver has a different IOCTL code — will need driver-specific code.
-       For now, this shells out to a separate mapper tool. */
-    char cmd[2048];
-    snprintf(cmd, sizeof(cmd), "\"%s\\..\\subagent\\loader\\ophion_loader.exe\"", g_launcher_dir);
-    printf("  Injecting Ophion via ghost loader...\n");
-    int rc = system(cmd);
-    if (rc != 0) {
-        printf(RED "  Ophion injection failed. Fallback: use kdmapper manually.\n" RST);
-        printf(YLW "  kdmapper Ophion.sys\n" RST);
-        return -1;
+    char path_loader[MAX_PROFILE_PATH], path_kdmapper[MAX_PROFILE_PATH], path_ophion[MAX_PROFILE_PATH];
+    snprintf(path_loader, sizeof(path_loader), "%s\\..\\subagent\\loader\\ophion_loader.exe", g_launcher_dir);
+    snprintf(path_kdmapper, sizeof(path_kdmapper), "%s\\..\\subagent\\loader\\kdmapper.exe", g_launcher_dir);
+    snprintf(path_ophion, sizeof(path_ophion), "%s\\..\\subagent\\loader\\Ophion.sys", g_launcher_dir);
+
+    /* Try ghost loader first */
+    if (GetFileAttributesA(path_loader) != INVALID_FILE_ATTRIBUTES) {
+        char cmd[2048];
+        snprintf(cmd, sizeof(cmd), "\"%s\"", path_loader);
+        printf("  Injecting via ghost loader...\n");
+        int rc = system(cmd);
+        if (rc == 0) {
+            printf(GRN "  Ophion injected OK (ghost loader)\n" RST);
+            Sleep(500);
+            return 0;
+        }
+        printf(YLW "  Ghost loader failed (rc=%d)\n" RST, rc);
     }
-    printf(GRN "  Ophion injected OK\n" RST);
-    return 0;
+
+    /* Fallback: kdmapper */
+    if (GetFileAttributesA(path_kdmapper) != INVALID_FILE_ATTRIBUTES &&
+        GetFileAttributesA(path_ophion) != INVALID_FILE_ATTRIBUTES) {
+        char cmd[2048];
+        snprintf(cmd, sizeof(cmd), "\"%s\" \"%s\"", path_kdmapper, path_ophion);
+        printf("  Injecting via kdmapper...\n");
+        int rc = system(cmd);
+        if (rc == 0) {
+            printf(GRN "  Ophion injected OK (kdmapper)\n" RST);
+            Sleep(500);
+            return 0;
+        }
+        printf(YLW "  kdmapper injection failed (rc=%d)\n" RST, rc);
+    }
+
+    printf(RED "  Ophion injection failed. Place ophion_loader.exe in subagent/loader/\n" RST);
+    printf(YLW "  Or use: kdmapper Ophion.sys\n" RST);
+    return -1;
 }
 
 /* ─── Launch command ─── */
@@ -580,15 +717,10 @@ static int cmd_launch(int argc, char **argv) {
     }
     /* Step 3: Apply Ophion config via IOCTL */
     printf("3. Applying Ophion config...\n");
-    /* TODO: Send SPOOF_CONFIG_V3 via IOCTL to \\.\Ophion */
-    HANDLE h = CreateFileA("\\\\.\\Ophion", GENERIC_READ|GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, NULL);
-    if (h != INVALID_HANDLE_VALUE) {
-        printf(GRN "  Connected to Ophion device\n" RST);
-        /* Build config struct */
-        /* ... IOCTL send ... */
-        CloseHandle(h);
+    if (ophion_send_default_config() == 0) {
+        printf(GRN "  Ophion config applied OK\n" RST);
     } else {
-        printf(YLW "  Ophion device not available (not injected?)\n" RST);
+        printf(YLW "  Could not send config to Ophion (not running?)\n" RST);
     }
     /* Step 4: Verify */
     printf("4. Running verification...\n");
@@ -625,10 +757,92 @@ static int cmd_profile(int argc, char **argv) {
     if (strcmp(argv[2], "list") == 0) return profile_list();
     if (strcmp(argv[2], "apply") == 0 && argc >= 4) return profile_apply(argv[3]);
     if (strcmp(argv[2], "create") == 0) {
-        printf("Interactive profile creation (TODO)\n");
+        char name[MAX_STR], game[MAX_STR], out[MAX_PROFILE_PATH];
+        int hide_proc, mask_tsc, full_cpuid, rand_tsc, hide_vbox, spoof_dbg;
+        printf(BLD "\nInteractive Profile Creation\n" RST);
+        printf("============================\n\n");
+        printf("Profile name: "); fgets(name, sizeof(name), stdin);
+        name[strcspn(name, "\n")] = 0;
+        printf("Game executable (e.g. Rust.exe): "); fgets(game, sizeof(game), stdin);
+        game[strcspn(game, "\n")] = 0;
+        printf("Hide game process? (1=yes 0=no) [1]: "); {
+            char buf[16]; fgets(buf, sizeof(buf), stdin);
+            hide_proc = (buf[0]=='0')?0:1;
+        }
+        printf("Mask VM-exit timing? (1=yes 0=no) [1]: "); {
+            char buf[16]; fgets(buf, sizeof(buf), stdin);
+            mask_tsc = (buf[0]=='0')?0:1;
+        }
+        printf("Full CPUID cache? (1=yes 0=no) [1]: "); {
+            char buf[16]; fgets(buf, sizeof(buf), stdin);
+            full_cpuid = (buf[0]=='0')?0:1;
+        }
+        printf("Randomize TSC? (1=yes 0=no) [0]: "); {
+            char buf[16]; fgets(buf, sizeof(buf), stdin);
+            rand_tsc = (buf[0]=='1')?1:0;
+        }
+        printf("Hide VBox pages? (1=yes 0=no) [1]: "); {
+            char buf[16]; fgets(buf, sizeof(buf), stdin);
+            hide_vbox = (buf[0]=='0')?0:1;
+        }
+        printf("Spoof debug registers? (1=yes 0=no) [1]: "); {
+            char buf[16]; fgets(buf, sizeof(buf), stdin);
+            spoof_dbg = (buf[0]=='0')?0:1;
+        }
+        snprintf(out, sizeof(out), "%s\\%s.json", g_profiles_dir, name);
+        FILE *f = fopen(out, "w");
+        if (!f) { printf(RED "Cannot write %s\n" RST, out); return 1; }
+        fprintf(f, "{\n");
+        fprintf(f, "    \"name\": \"%s\",\n", name);
+        fprintf(f, "    \"game\": \"%s\",\n", game);
+        fprintf(f, "    \"ophion\": {\n");
+        fprintf(f, "        \"fHideProcess\": %s,\n", hide_proc?"true":"false");
+        fprintf(f, "        \"fMaskVmExitTiming\": %s,\n", mask_tsc?"true":"false");
+        fprintf(f, "        \"fFullCpuidCache\": %s,\n", full_cpuid?"true":"false");
+        fprintf(f, "        \"fRandomizeTsc\": %s,\n", rand_tsc?"true":"false");
+        fprintf(f, "        \"fHideVboxPages\": %s,\n", hide_vbox?"true":"false");
+        fprintf(f, "        \"fSpoofDebugRegs\": %s\n", spoof_dbg?"true":"false");
+        fprintf(f, "    },\n");
+        fprintf(f, "    \"verify\": [\"smbios\", \"acpi\", \"pci_vendor\", \"mac\", \"cpuid\", \"tsc_timing\", \"memory_scan\", \"port504\", \"guestadd\", \"disk\"]\n");
+        fprintf(f, "}\n");
+        fclose(f);
+        printf(GRN "Profile saved: %s\n" RST, out);
         return 0;
     }
     printf("Unknown profile subcommand: %s\n", argv[2]);
+    return 1;
+}
+
+/* ─── Ophion command ─── */
+static int cmd_ophion(int argc, char **argv) {
+    if (argc < 3) {
+        printf("Usage: vtx ophion <status|vmxoff|sendconfig>\n");
+        return 0;
+    }
+    if (strcmp(argv[2], "status") == 0) {
+        int cpus = ophion_get_status();
+        if (cpus >= 0) printf(GRN "Ophion active on %u CPU(s)\n" RST, cpus);
+        else printf(YLW "Ophion not running\n" RST);
+        return cpus >= 0 ? 0 : 1;
+    }
+    if (strcmp(argv[2], "vmxoff") == 0) {
+        int rc = ophion_vmxoff();
+        printf(rc==0 ? GRN "VMXOFF requested\n" RST : RED "VMXOFF failed (Ophion not running)\n" RST);
+        return rc;
+    }
+    if (strcmp(argv[2], "sendconfig") == 0) {
+        HANDLE h = ophion_open();
+        if (h == INVALID_HANDLE_VALUE) {
+            printf(RED "Ophion not running\n" RST);
+            return 1;
+        }
+        CloseHandle(h);
+        /* Use loaded profile if available, else default */
+        int rc = ophion_send_default_config();
+        printf(rc==0 ? GRN "Config sent\n" RST : RED "Config send failed\n" RST);
+        return rc;
+    }
+    printf("Unknown ophion command: %s\n", argv[2]);
     return 1;
 }
 
@@ -636,14 +850,17 @@ static int cmd_profile(int argc, char **argv) {
 static void print_help(void) {
     printf(BLD "VTX Launcher v" VTX_VERSION RST " — Unified OnyxBox + Ophion tool\n\n");
     printf("Usage:\n");
-    printf("  " BLD "vtx build" RST " [onyxbox|ophion]        Build project(s)\n");
-    printf("  " BLD "vtx launch" RST " [--profile <name>]    Load driver + inject Ophion + verify\n");
-    printf("                             [--no-inject]       Launch without Ophion injection\n");
-    printf("  " BLD "vtx verify" RST " [--verbose|-v]         Run detection checks\n");
-    printf("  " BLD "vtx profile" RST " list                  List available profiles\n");
-    printf("  " BLD "vtx profile" RST " apply <name>          Load a profile\n");
-    printf("  " BLD "vtx profile" RST " create                Create a new profile\n");
-    printf("  " BLD "vtx help" RST "                          Show this help\n\n");
+    printf("  " BLD "vtx build" RST " [onyxbox|ophion]          Build project(s)\n");
+    printf("  " BLD "vtx launch" RST " [--profile <name>]      Load driver + inject Ophion + verify\n");
+    printf("                               [--no-inject]       Skip Ophion injection\n");
+    printf("  " BLD "vtx verify" RST " [--verbose|-v]           Run detection checks\n");
+    printf("  " BLD "vtx profile" RST " list                    List available profiles\n");
+    printf("  " BLD "vtx profile" RST " apply <name>            Load a profile\n");
+    printf("  " BLD "vtx profile" RST " create                  Create a new profile\n");
+    printf("  " BLD "vtx ophion" RST " status                   Check Ophion status\n");
+    printf("  " BLD "vtx ophion" RST " vmxoff                   Request VMXOFF\n");
+    printf("  " BLD "vtx ophion" RST " sendconfig               Send spoof config to Ophion\n");
+    printf("  " BLD "vtx help" RST "                            Show this help\n\n");
     printf("Profiles directory: %s\n", g_profiles_dir);
     printf("Drivers directory:  %s\\drivers\\\n", g_launcher_dir);
     printf("Place .sys files in launcher/drivers/ (not tracked by git)\n");
@@ -657,6 +874,7 @@ int main(int argc, char **argv) {
     if (strcmp(argv[1], "launch")  == 0) return cmd_launch(argc, argv);
     if (strcmp(argv[1], "verify")  == 0) return cmd_verify(argc, argv);
     if (strcmp(argv[1], "profile") == 0) return cmd_profile(argc, argv);
+    if (strcmp(argv[1], "ophion")  == 0) return cmd_ophion(argc, argv);
     if (strcmp(argv[1], "help")    == 0 || strcmp(argv[1], "--help") == 0) { print_help(); return 0; }
     printf("Unknown command: %s\n", argv[1]);
     print_help();

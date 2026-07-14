@@ -9,5 +9,5 @@
         "fHideVboxPages": true,
         "fSpoofDebugRegs": true
     },
-    "verify": ["smbios", "acpi", "pci_vendor", "mac", "cpuid", "tsc_timing", "port504", "guestadd"]
+    "verify": ["smbios", "acpi", "pci_vendor", "mac", "cpuid", "tsc_timing", "port504", "guestadd", "disk"]
 }
