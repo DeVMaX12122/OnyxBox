@@ -25,7 +25,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-DefinitionBlock ("SSDT.aml", "SSDT", 1, "VBOX  ", "VBOXTPMT", 2)
+DefinitionBlock ("SSDT.aml", "SSDT", 1, "ASUS  ", "ASUSTPM", 2)
 {
     External(DBG, MethodObj, ,)
 

@@ -1,0 +1,178 @@
+diff --git a/include/VBox/param.h b/include/VBox/param.h
+index 5394d54bc..455e39d7b 100644
+--- a/include/VBox/param.h
++++ b/include/VBox/param.h
+@@ -253,7 +253,7 @@
+ /** @defgroup   grp_vbox_pci        PCI Identifiers
+  * @{ */
+ /** VirtualBox PCI vendor ID. */
+-#define VBOX_PCI_VENDORID           (0x80ee)
++#define VBOX_PCI_VENDORID           (0x8086)        /* Intel Corporation */
+ 
+ /** @name VirtualBox graphics card identifiers
+  * @{ */
+diff --git a/include/VBox/param.mac b/include/VBox/param.mac
+index a96f41db4..a532d5f26 100644
+--- a/include/VBox/param.mac
++++ b/include/VBox/param.mac
+@@ -87,7 +87,7 @@
+ %endif
+ %define VMM_MIN_CPU_COUNT           1
+ %define VMM_MAX_CPU_COUNT           64
+-%define VBOX_PCI_VENDORID           (0x80ee)
++%define VBOX_PCI_VENDORID           (0x8086)
+ %define VBOX_VENDORID               VBOX_PCI_VENDORID
+ %define VBOX_DEVICEID               (0xbeef)
+ %define VBOX_VESA_VENDORID          VBOX_PCI_VENDORID
+diff --git a/src/VBox/Devices/Bus/DevPCI.cpp b/src/VBox/Devices/Bus/DevPCI.cpp
+index b5d03cd78..83261fe4e 100644
+--- a/src/VBox/Devices/Bus/DevPCI.cpp
++++ b/src/VBox/Devices/Bus/DevPCI.cpp
+@@ -674,7 +674,7 @@ static void pci_bios_init_device(PPDMDEVINS pDevIns, PDEVPCIROOT pGlobals, PDEVP
+                                  */
+                                 fActiveIORegion = true;
+ 
+-                                if (vendor_id == 0x80ee || vendor_id == 0x15ad)
++                                if (vendor_id == VBOX_PCI_VENDORID || vendor_id == 0x15ad)
+                                 {
+                                     bool fPrefetch =    (u8ResourceType & ((uint8_t)(PCI_ADDRESS_SPACE_MEM_PREFETCH | PCI_ADDRESS_SPACE_IO)))
+                                                      == PCI_ADDRESS_SPACE_MEM_PREFETCH;
+diff --git a/src/VBox/Devices/EFI/Firmware/VBoxPkg/VBoxVgaDxe/VBoxVga.h b/src/VBox/Devices/EFI/Firmware/VBoxPkg/VBoxVgaDxe/VBoxVga.h
+index 4ed9cf01e..a4fd9f983 100644
+--- a/src/VBox/Devices/EFI/Firmware/VBoxPkg/VBoxVgaDxe/VBoxVga.h
++++ b/src/VBox/Devices/EFI/Firmware/VBoxPkg/VBoxVgaDxe/VBoxVga.h
+@@ -88,7 +88,7 @@
+ //
+ // VirtualBox VGA PCI Configuration Header values
+ //
+-#define VBOX_VENDOR_ID          0x80ee
++#define VBOX_VENDOR_ID          0x8086
+ #define VBOX_VGA_DEVICE_ID      0xbeef
+ 
+ 
+diff --git a/src/VBox/Devices/EFI/Firmware/VBoxPkg/VmwSvga3Dxe/VmwSvga3.h b/src/VBox/Devices/EFI/Firmware/VBoxPkg/VmwSvga3Dxe/VmwSvga3.h
+index 27951885f..96a5ac6af 100644
+--- a/src/VBox/Devices/EFI/Firmware/VBoxPkg/VmwSvga3Dxe/VmwSvga3.h
++++ b/src/VBox/Devices/EFI/Firmware/VBoxPkg/VmwSvga3Dxe/VmwSvga3.h
+@@ -44,7 +44,7 @@
+ //
+ // VirtualBox VGA PCI Configuration Header values
+ //
+-#define PCI_VENDOR_ID_VBOX             0x80ee
++#define PCI_VENDOR_ID_VBOX             0x8086
+ #define PCI_DEVICE_ID_VBOX_SVGA        0xbeef
+ 
+ //
+diff --git a/src/VBox/Devices/Graphics/DevVGA.cpp b/src/VBox/Devices/Graphics/DevVGA.cpp
+index 124f7c2cb..a6d2f5414 100644
+--- a/src/VBox/Devices/Graphics/DevVGA.cpp
++++ b/src/VBox/Devices/Graphics/DevVGA.cpp
+@@ -6983,7 +6983,7 @@ static DECLCALLBACK(int)   vgaR3Construct(PPDMDEVINS pDevIns, int iInstance, PCF
+         }
+         else
+         {
+-            PDMPciDevSetVendorId(pPciDev,       0x80ee);   /* PCI vendor, just a free bogus value */
++            PDMPciDevSetVendorId(pPciDev,       VBOX_PCI_VENDORID);
+             PDMPciDevSetDeviceId(pPciDev,       0xbeef);
+         }
+         PDMPciDevSetSubSystemVendorId(pPciDev,  PCI_VENDOR_ID_VMWARE);
+@@ -6995,7 +6995,7 @@ static DECLCALLBACK(int)   vgaR3Construct(PPDMDEVINS pDevIns, int iInstance, PCF
+     else
+ # endif /* VBOX_WITH_VMSVGA */
+     {
+-        PDMPciDevSetVendorId(pPciDev,           0x80ee);   /* PCI vendor, just a free bogus value */
++        PDMPciDevSetVendorId(pPciDev,           VBOX_PCI_VENDORID);
+         PDMPciDevSetDeviceId(pPciDev,           0xbeef);
+     }
+     PDMPciDevSetClassSub(pPciDev,               0x00);   /* VGA controller */
+diff --git a/src/VBox/Devices/Input/UsbKbd.cpp b/src/VBox/Devices/Input/UsbKbd.cpp
+index 4a1c809b1..0ff47a316 100644
+--- a/src/VBox/Devices/Input/UsbKbd.cpp
++++ b/src/VBox/Devices/Input/UsbKbd.cpp
+@@ -122,7 +122,7 @@
+ 
+ /** @name USB HID vendor and product IDs
+  * @{ */
+-#define VBOX_USB_VENDOR             0x80EE
++#define VBOX_USB_VENDOR             0x8086  /* Intel Corporation */
+ #define USBHID_PID_BAS_KEYBOARD     0x0010
+ #define USBHID_PID_EXT_KEYBOARD     0x0011
+ /** @} */
+diff --git a/src/VBox/Devices/Input/UsbMouse.cpp b/src/VBox/Devices/Input/UsbMouse.cpp
+index df980db3d..a931c0fa3 100644
+--- a/src/VBox/Devices/Input/UsbMouse.cpp
++++ b/src/VBox/Devices/Input/UsbMouse.cpp
+@@ -62,7 +62,7 @@
+ 
+ /** @name USB HID vendor and product IDs
+  * @{ */
+-#define VBOX_USB_VENDOR             0x80EE
++#define VBOX_USB_VENDOR             0x8086  /* Intel Corporation */
+ #define USBHID_PID_MOUSE            0x0020
+ #define USBHID_PID_TABLET           0x0021
+ #define USBHID_PID_MT_TOUCHSCREEN   0x0022
+diff --git a/src/VBox/Devices/Network/UsbNet.cpp b/src/VBox/Devices/Network/UsbNet.cpp
+index 45bf2e91e..59acc05cb 100644
+--- a/src/VBox/Devices/Network/UsbNet.cpp
++++ b/src/VBox/Devices/Network/UsbNet.cpp
+@@ -57,7 +57,7 @@
+ 
+ /** @name USB Ethernet vendor and product IDs
+  * @{ */
+-#define VBOX_USB_VENDOR             0x80EE
++#define VBOX_USB_VENDOR             0x8086  /* Intel Corporation */
+ #define USBNET_PID                  0x0040
+ /** @} */
+ 
+diff --git a/src/VBox/Devices/Samples/DevPlayground.cpp b/src/VBox/Devices/Samples/DevPlayground.cpp
+index 4b2b7393c..f9e856bf6 100644
+--- a/src/VBox/Devices/Samples/DevPlayground.cpp
++++ b/src/VBox/Devices/Samples/DevPlayground.cpp
+@@ -313,7 +313,7 @@ static DECLCALLBACK(int) devPlaygroundConstruct(PPDMDEVINS pDevIns, int iInstanc
+ 
+         PDMPCIDEV_ASSERT_VALID(pDevIns, pPciDev);
+ 
+-        PDMPciDevSetVendorId(pPciDev,       0x80ee);
++        PDMPciDevSetVendorId(pPciDev,       VBOX_PCI_VENDORID);
+         PDMPciDevSetDeviceId(pPciDev,       0xde4e);
+         PDMPciDevSetClassBase(pPciDev,      0x07);  /* communications device */
+         PDMPciDevSetClassSub(pPciDev,       0x80);  /* other communications device */
+diff --git a/src/VBox/Devices/Storage/DevNVMe.cpp b/src/VBox/Devices/Storage/DevNVMe.cpp
+index 0f1f0cb2f..2e8b342a1 100644
+--- a/src/VBox/Devices/Storage/DevNVMe.cpp
++++ b/src/VBox/Devices/Storage/DevNVMe.cpp
+@@ -114,7 +114,7 @@
+ /** @name PCI device related constants.
+  * @{ */
+ /** The PCI vendor ID. */
+-#define NVME_PCI_VENDOR_ID             0x80ee
++#define NVME_PCI_VENDOR_ID             VBOX_PCI_VENDORID
+ /** Where the MSI capability starts. */
+ #define NVME_PCI_MSI_CAP_OFS           0x80
+ /** Where the MSI-X capability starts. */
+diff --git a/src/VBox/Devices/Storage/UsbMsd.cpp b/src/VBox/Devices/Storage/UsbMsd.cpp
+index c20d1289a..8aadc029e 100644
+--- a/src/VBox/Devices/Storage/UsbMsd.cpp
++++ b/src/VBox/Devices/Storage/UsbMsd.cpp
+@@ -56,7 +56,7 @@
+ 
+ /** @name USB MSD vendor and product IDs
+  * @{ */
+-#define VBOX_USB_VENDOR             0x80EE
++#define VBOX_USB_VENDOR             0x8086  /* Intel Corporation */
+ #define USBMSD_PID_HD               0x0030
+ #define USBMSD_PID_CD               0x0031
+ /** @} */
+diff --git a/src/VBox/Devices/VMMDev/VMMDev.cpp b/src/VBox/Devices/VMMDev/VMMDev.cpp
+index 963ccb622..b8d218f94 100644
+--- a/src/VBox/Devices/VMMDev/VMMDev.cpp
++++ b/src/VBox/Devices/VMMDev/VMMDev.cpp
+@@ -4842,7 +4842,7 @@ static DECLCALLBACK(int) vmmdevConstruct(PPDMDEVINS pDevIns, int iInstance, PCFG
+     PDMPCIDEV_ASSERT_VALID(pDevIns, pPciDev);
+ 
+     /* PCI vendor, just a free bogus value */
+-    PDMPciDevSetVendorId(pPciDev,     0x80ee);
++    PDMPciDevSetVendorId(pPciDev,     VBOX_PCI_VENDORID);
+     /* device ID */
+     PDMPciDevSetDeviceId(pPciDev,     0xcafe);
+     /* class sub code (other type of system peripheral) */

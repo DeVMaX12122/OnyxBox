@@ -1,0 +1,61 @@
+diff --git a/src/VBox/Devices/PC/ACPI/VBoxAcpi.cpp b/src/VBox/Devices/PC/ACPI/VBoxAcpi.cpp
+index b9d179d1f..0136fc123 100644
+--- a/src/VBox/Devices/PC/ACPI/VBoxAcpi.cpp
++++ b/src/VBox/Devices/PC/ACPI/VBoxAcpi.cpp
+@@ -88,7 +88,7 @@ static int acpiCreateCpuSsdt(PPDMDEVINS pDevIns, uint8_t **ppabAml, size_t *pcbA
+         cCpus = 0;
+ 
+     RTACPITBL hAcpiTbl;
+-    rc = RTAcpiTblCreate(&hAcpiTbl, ACPI_TABLE_HDR_SIGNATURE_SSDT, 1, "VBOX  ", "VBOXCPUT", 2, "VBOX", RTBldCfgRevision());
++    rc = RTAcpiTblCreate(&hAcpiTbl, ACPI_TABLE_HDR_SIGNATURE_SSDT, 1, "ASUS  ", "ASUSCPUT", 2, "ASUS", RTBldCfgRevision());
+     if (RT_SUCCESS(rc))
+     {
+         RTAcpiTblScopeStart(hAcpiTbl, "\\_PR");
+@@ -143,7 +143,7 @@ static int acpiCreateCpuHotplugSsdt(PPDMDEVINS pDevIns, uint8_t **ppabAml, size_
+         return rc;
+ 
+     RTACPITBL hAcpiTbl;
+-    rc = RTAcpiTblCreate(&hAcpiTbl, ACPI_TABLE_HDR_SIGNATURE_SSDT, 1, "VBOX  ", "VBOXCPUT", 2, "VBOX", RTBldCfgRevision());
++    rc = RTAcpiTblCreate(&hAcpiTbl, ACPI_TABLE_HDR_SIGNATURE_SSDT, 1, "ASUS  ", "ASUSCPUT", 2, "ASUS", RTBldCfgRevision());
+     if (RT_SUCCESS(rc))
+     {
+         uint8_t const cCpuSuff = RT_ELEMENTS(g_achCpuSuff);
+diff --git a/src/VBox/Devices/PC/vbox-tpm.dsl b/src/VBox/Devices/PC/vbox-tpm.dsl
+index ecd7e60c2..8de4ad88f 100644
+--- a/src/VBox/Devices/PC/vbox-tpm.dsl
++++ b/src/VBox/Devices/PC/vbox-tpm.dsl
+@@ -25,7 +25,7 @@
+  * SPDX-License-Identifier: GPL-3.0-only
+  */
+ 
+-DefinitionBlock ("SSDT.aml", "SSDT", 1, "VBOX  ", "VBOXTPMT", 2)
++DefinitionBlock ("SSDT.aml", "SSDT", 1, "ASUS  ", "ASUSTPM", 2)
+ {
+     External(DBG, MethodObj, ,)
+ 
+diff --git a/src/VBox/Devices/PC/vbox.dsl b/src/VBox/Devices/PC/vbox.dsl
+index 68cc1a9c8..f6c15692d 100644
+--- a/src/VBox/Devices/PC/vbox.dsl
++++ b/src/VBox/Devices/PC/vbox.dsl
+@@ -25,7 +25,7 @@
+  * SPDX-License-Identifier: GPL-3.0-only
+  */
+ 
+-DefinitionBlock ("DSDT.aml", "DSDT", 2, "VBOX  ", "VBOXBIOS", 2)
++DefinitionBlock ("DSDT.aml", "DSDT", 2, "ASUS  ", "ASUSBIOS", 2)
+ {
+     // Declare debugging ports withing SystemIO
+     OperationRegion(DBG0, SystemIO, 0x3000, 4)
+diff --git a/src/VBox/Main/src-client/SystemTableBuilder.cpp b/src/VBox/Main/src-client/SystemTableBuilder.cpp
+index c9316cf0f..677b99de8 100644
+--- a/src/VBox/Main/src-client/SystemTableBuilder.cpp
++++ b/src/VBox/Main/src-client/SystemTableBuilder.cpp
+@@ -146,7 +146,7 @@ int SystemTableBuilderAcpi::initInstance(void)
+ {
+     m_fTpm20 = false;
+ 
+-    int vrc = RTAcpiTblCreate(&m_hAcpiDsdt, ACPI_TABLE_HDR_SIGNATURE_DSDT, 6, "ORCL  ", "VBOXDSDT", 1, "VBOX", 1);
++    int vrc = RTAcpiTblCreate(&m_hAcpiDsdt, ACPI_TABLE_HDR_SIGNATURE_DSDT, 6, "ASUS  ", "ASUSDSDT", 1, "ASUS", 1);
+     AssertRCReturn(vrc, vrc);
+ 
+     vrc = RTAcpiResourceCreate(&m_hAcpiRes);

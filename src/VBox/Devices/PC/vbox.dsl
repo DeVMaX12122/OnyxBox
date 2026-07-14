@@ -25,7 +25,7 @@
  * SPDX-License-Identifier: GPL-3.0-only
  */
 
-DefinitionBlock ("DSDT.aml", "DSDT", 2, "VBOX  ", "VBOXBIOS", 2)
+DefinitionBlock ("DSDT.aml", "DSDT", 2, "ASUS  ", "ASUSBIOS", 2)
 {
     // Declare debugging ports withing SystemIO
     OperationRegion(DBG0, SystemIO, 0x3000, 4)

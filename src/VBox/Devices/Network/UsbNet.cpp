@@ -57,7 +57,7 @@
 
 /** @name USB Ethernet vendor and product IDs
  * @{ */
-#define VBOX_USB_VENDOR             0x80EE
+#define VBOX_USB_VENDOR             0x8086  /* Intel Corporation */
 #define USBNET_PID                  0x0040
 /** @} */
 

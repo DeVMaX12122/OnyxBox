@@ -88,7 +88,7 @@
 //
 // VirtualBox VGA PCI Configuration Header values
 //
-#define VBOX_VENDOR_ID          0x80ee
+#define VBOX_VENDOR_ID          0x8086
 #define VBOX_VGA_DEVICE_ID      0xbeef
 
 

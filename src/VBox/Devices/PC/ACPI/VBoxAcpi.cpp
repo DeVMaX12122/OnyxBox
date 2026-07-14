@@ -88,7 +88,7 @@ static int acpiCreateCpuSsdt(PPDMDEVINS pDevIns, uint8_t **ppabAml, size_t *pcbA
         cCpus = 0;
 
     RTACPITBL hAcpiTbl;
-    rc = RTAcpiTblCreate(&hAcpiTbl, ACPI_TABLE_HDR_SIGNATURE_SSDT, 1, "VBOX  ", "VBOXCPUT", 2, "VBOX", RTBldCfgRevision());
+    rc = RTAcpiTblCreate(&hAcpiTbl, ACPI_TABLE_HDR_SIGNATURE_SSDT, 1, "ASUS  ", "ASUSCPUT", 2, "ASUS", RTBldCfgRevision());
     if (RT_SUCCESS(rc))
     {
         RTAcpiTblScopeStart(hAcpiTbl, "\\_PR");
@@ -143,7 +143,7 @@ static int acpiCreateCpuHotplugSsdt(PPDMDEVINS pDevIns, uint8_t **ppabAml, size_
         return rc;
 
     RTACPITBL hAcpiTbl;
-    rc = RTAcpiTblCreate(&hAcpiTbl, ACPI_TABLE_HDR_SIGNATURE_SSDT, 1, "VBOX  ", "VBOXCPUT", 2, "VBOX", RTBldCfgRevision());
+    rc = RTAcpiTblCreate(&hAcpiTbl, ACPI_TABLE_HDR_SIGNATURE_SSDT, 1, "ASUS  ", "ASUSCPUT", 2, "ASUS", RTBldCfgRevision());
     if (RT_SUCCESS(rc))
     {
         uint8_t const cCpuSuff = RT_ELEMENTS(g_achCpuSuff);

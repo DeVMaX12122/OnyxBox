@@ -114,7 +114,7 @@
 /** @name PCI device related constants.
  * @{ */
 /** The PCI vendor ID. */
-#define NVME_PCI_VENDOR_ID             0x80ee
+#define NVME_PCI_VENDOR_ID             VBOX_PCI_VENDORID
 /** Where the MSI capability starts. */
 #define NVME_PCI_MSI_CAP_OFS           0x80
 /** Where the MSI-X capability starts. */

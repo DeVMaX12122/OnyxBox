@@ -6983,7 +6983,7 @@ static DECLCALLBACK(int)   vgaR3Construct(PPDMDEVINS pDevIns, int iInstance, PCF
         }
         else
         {
-            PDMPciDevSetVendorId(pPciDev,       0x80ee);   /* PCI vendor, just a free bogus value */
+            PDMPciDevSetVendorId(pPciDev,       VBOX_PCI_VENDORID);
             PDMPciDevSetDeviceId(pPciDev,       0xbeef);
         }
         PDMPciDevSetSubSystemVendorId(pPciDev,  PCI_VENDOR_ID_VMWARE);
@@ -6995,7 +6995,7 @@ static DECLCALLBACK(int)   vgaR3Construct(PPDMDEVINS pDevIns, int iInstance, PCF
     else
 # endif /* VBOX_WITH_VMSVGA */
     {
-        PDMPciDevSetVendorId(pPciDev,           0x80ee);   /* PCI vendor, just a free bogus value */
+        PDMPciDevSetVendorId(pPciDev,           VBOX_PCI_VENDORID);
         PDMPciDevSetDeviceId(pPciDev,           0xbeef);
     }
     PDMPciDevSetClassSub(pPciDev,               0x00);   /* VGA controller */

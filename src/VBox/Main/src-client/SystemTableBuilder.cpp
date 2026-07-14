@@ -146,7 +146,7 @@ int SystemTableBuilderAcpi::initInstance(void)
 {
     m_fTpm20 = false;
 
-    int vrc = RTAcpiTblCreate(&m_hAcpiDsdt, ACPI_TABLE_HDR_SIGNATURE_DSDT, 6, "ORCL  ", "VBOXDSDT", 1, "VBOX", 1);
+    int vrc = RTAcpiTblCreate(&m_hAcpiDsdt, ACPI_TABLE_HDR_SIGNATURE_DSDT, 6, "ASUS  ", "ASUSDSDT", 1, "ASUS", 1);
     AssertRCReturn(vrc, vrc);
 
     vrc = RTAcpiResourceCreate(&m_hAcpiRes);

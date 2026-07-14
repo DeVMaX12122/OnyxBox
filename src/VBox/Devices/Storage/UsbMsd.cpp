@@ -56,7 +56,7 @@
 
 /** @name USB MSD vendor and product IDs
  * @{ */
-#define VBOX_USB_VENDOR             0x80EE
+#define VBOX_USB_VENDOR             0x8086  /* Intel Corporation */
 #define USBMSD_PID_HD               0x0030
 #define USBMSD_PID_CD               0x0031
 /** @} */

@@ -253,7 +253,7 @@
 /** @defgroup   grp_vbox_pci        PCI Identifiers
  * @{ */
 /** VirtualBox PCI vendor ID. */
-#define VBOX_PCI_VENDORID           (0x80ee)
+#define VBOX_PCI_VENDORID           (0x8086)        /* Intel Corporation */
 
 /** @name VirtualBox graphics card identifiers
  * @{ */

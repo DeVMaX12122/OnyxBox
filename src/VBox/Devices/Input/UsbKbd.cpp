@@ -122,7 +122,7 @@
 
 /** @name USB HID vendor and product IDs
  * @{ */
-#define VBOX_USB_VENDOR             0x80EE
+#define VBOX_USB_VENDOR             0x8086  /* Intel Corporation */
 #define USBHID_PID_BAS_KEYBOARD     0x0010
 #define USBHID_PID_EXT_KEYBOARD     0x0011
 /** @} */
