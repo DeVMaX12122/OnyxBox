@@ -205,13 +205,8 @@ typedef SOLARISFIXEDDISK *PSOLARISFIXEDDISK;
 #include "HostDriveImpl.h"
 #include "HostDrivePartitionImpl.h"
 
-#ifndef VBOX_OSE
-/* Oracle owned OUI, not used by actual hardware. */
-# define VBOX_ETHERNET_OUI "000F4B"
-#else /* VBOX_OSE */
-/* Traditional VirtualBox OUI, not officially assigned. */
-# define VBOX_ETHERNET_OUI "080027"
-#endif /* VBOX_OSE */
+/* Spoofed Intel OUI — eliminates VirtualBox MAC fingerprint. */
+# define VBOX_ETHERNET_OUI "001B21"
 
 ////////////////////////////////////////////////////////////////////////////////
 //

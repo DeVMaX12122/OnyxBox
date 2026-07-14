@@ -4668,7 +4668,7 @@ static DECLCALLBACK(int) acpiR3Construct(PPDMDEVINS pDevIns, int iInstance, PCFG
     }
 
     char szOemId[16];
-    rc = pHlp->pfnCFGMQueryStringDef(pCfg, "AcpiOemId", szOemId, sizeof(szOemId), "VBOX  ");
+    rc = pHlp->pfnCFGMQueryStringDef(pCfg, "AcpiOemId", szOemId, sizeof(szOemId), "ASUS  ");
     if (RT_FAILURE(rc))
         return PDMDEV_SET_ERROR(pDevIns, rc, N_("Configuration error: Querying \"AcpiOemId\" as string failed"));
     size_t cchOemId = strlen(szOemId);
@@ -4678,7 +4678,7 @@ static DECLCALLBACK(int) acpiR3Construct(PPDMDEVINS pDevIns, int iInstance, PCFG
     memcpy(pThis->au8OemId, szOemId, cchOemId);
 
     char szOemTabId[16];
-    rc = pHlp->pfnCFGMQueryStringDef(pCfg, "AcpiOemTabId", szOemTabId, sizeof(szOemTabId), "VBOX");
+    rc = pHlp->pfnCFGMQueryStringDef(pCfg, "AcpiOemTabId", szOemTabId, sizeof(szOemTabId), "ASUS");
     if (RT_FAILURE(rc))
         return PDMDEV_SET_ERROR(pDevIns, rc, N_("Configuration error: Querying \"AcpiOemTabId\" as string failed"));
     size_t cchOemTabId = strlen(szOemTabId);

@@ -66,27 +66,27 @@ static const int32_t g_iDefDmiBIOSReleaseMajor  = 0;
 static const int32_t g_iDefDmiBIOSReleaseMinor  = 1;
 static const int32_t g_iDefDmiBIOSFirmwareMajor = 0;
 static const int32_t g_iDefDmiBIOSFirmwareMinor = 1;
-static const char   *g_pszDefDmiBIOSVendor      = "innotek GmbH";
-static const char   *g_pszDefDmiBIOSVersion     = "VirtualBox";
-static const char   *g_pszDefDmiBIOSReleaseDate = "12/01/2006";
+static const char   *g_pszDefDmiBIOSVendor      = "ASUS";
+static const char   *g_pszDefDmiBIOSVersion     = "UX305UA.201";
+static const char   *g_pszDefDmiBIOSReleaseDate = "04/01/2024";
 /* type 1 -- DMI system information */
-static const char   *g_pszDefDmiSystemVendor    = "innotek GmbH";
-static const char   *g_pszDefDmiSystemProduct   = "VirtualBox";
-static const char   *g_pszDefDmiSystemVersion   = "1.2";
-static const char   *g_pszDefDmiSystemSerial    = "0";
+static const char   *g_pszDefDmiSystemVendor    = "ASUS";
+static const char   *g_pszDefDmiSystemProduct   = "UX305UA";
+static const char   *g_pszDefDmiSystemVersion   = "1.0";
+static const char   *g_pszDefDmiSystemSerial    = "S4N1X3K8D2M0";
 static const char   *g_pszDefDmiSystemSKU       = "";
-static const char   *g_pszDefDmiSystemFamily    = "Virtual Machine";
+static const char   *g_pszDefDmiSystemFamily    = "Desktop";
 /* type 2 -- DMI board information */
-static const char   *g_pszDefDmiBoardVendor     = "Oracle Corporation";
-static const char   *g_pszDefDmiBoardProduct    = "VirtualBox";
-static const char   *g_pszDefDmiBoardVersion    = "1.2";
-static const char   *g_pszDefDmiBoardSerial     = "0";
+static const char   *g_pszDefDmiBoardVendor     = "ASUS";
+static const char   *g_pszDefDmiBoardProduct    = "UX305UA";
+static const char   *g_pszDefDmiBoardVersion    = "1.0";
+static const char   *g_pszDefDmiBoardSerial     = "B5N1X3K8D2M0";
 static const char   *g_pszDefDmiBoardAssetTag   = "";
 static const char   *g_pszDefDmiBoardLocInChass = "";
 static const int32_t g_iDefDmiBoardBoardType    = 0x0A; /* Motherboard */
 /* type 3 -- DMI chassis information */
-static const char   *g_pszDefDmiChassisVendor   = "Oracle Corporation";
-static const int32_t g_iDefDmiChassisType       = 0x01; /* ''other'', no chassis lock present */
+static const char   *g_pszDefDmiChassisVendor   = "ASUS";
+static const int32_t g_iDefDmiChassisType       = 0x03; /* Desktop */
 static const char   *g_pszDefDmiChassisVersion  = "";
 static const char   *g_pszDefDmiChassisSerial   = "";
 static const char   *g_pszDefDmiChassisAssetTag = "";
@@ -1127,8 +1127,8 @@ void FwCommonPlantMpsTable(PPDMDEVINS pDevIns, uint8_t *pTable, unsigned cbMax, 
     PMPSCFGTBLHEADER pCfgTab      = (MPSCFGTBLHEADER*)pTable;
     memcpy(pCfgTab->au8Signature, "PCMP", 4);
     pCfgTab->u8SpecRev             =  4;    /* 1.4 */
-    memcpy(pCfgTab->au8OemId, "VBOXCPU ", 8);
-    memcpy(pCfgTab->au8ProductId, "VirtualBox  ", 12);
+    memcpy(pCfgTab->au8OemId, "ASUS    ", 8);
+    memcpy(pCfgTab->au8ProductId, "UX305UA     ", 12);
     pCfgTab->u32OemTablePtr        =  0;
     pCfgTab->u16OemTableSize       =  0;
     pCfgTab->u16EntryCount         =  0;    /* Incremented as we go. */

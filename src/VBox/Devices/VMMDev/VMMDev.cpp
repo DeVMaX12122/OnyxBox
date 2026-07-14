@@ -5134,11 +5134,10 @@ static DECLCALLBACK(int) vmmdevConstruct(PPDMDEVINS pDevIns, int iInstance, PCFG
     AssertRCReturn(rc, rc);
 
     /*
-     * Register the backdoor logging port
+     * Backdoor logging port (0x504) removed — anti-cheats probe this
+     * fixed I/O port to detect VirtualBox. Without it, no response is returned.
      */
-    rc = PDMDevHlpIoPortCreateAndMap(pDevIns, RTLOG_DEBUG_PORT, 1, vmmdevBackdoorLog, NULL /*pfnIn*/,
-                                     "VMMDev backdoor logging", NULL, &pThis->hIoPortBackdoorLog);
-    AssertRCReturn(rc, rc);
+    pThis->hIoPortBackdoorLog = NIL_IOMIOPORTHANDLE;
 
 #ifdef VMMDEV_WITH_ALT_TIMESYNC
     /*

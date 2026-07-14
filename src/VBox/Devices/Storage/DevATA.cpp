@@ -2428,8 +2428,8 @@ static bool atapiR3PassthroughSS(PPDMDEVINS pDevIns, PATACONTROLLER pCtl, PATADE
                  * Motivation: changing the VM configuration should be as
                  *             invisible as possible to the guest. */
                 Log3(("ATAPI PT inquiry data before (%d): %.*Rhxs\n", cbTransfer, cbTransfer, s->abIOBuffer));
-                scsiPadStr(&s->abIOBuffer[8], "VBOX", 8);
-                scsiPadStr(&s->abIOBuffer[16], "CD-ROM", 16);
+                scsiPadStr(&s->abIOBuffer[8], "Samsung", 8);
+                scsiPadStr(&s->abIOBuffer[16], "DVD-ROM", 16);
                 scsiPadStr(&s->abIOBuffer[32], "1.0", 4);
             }
 
@@ -8197,12 +8197,12 @@ static DECLCALLBACK(int) ataR3Construct(PPDMDEVINS pDevIns, int iInstance, PCFGM
                     if (RT_FAILURE(rc) || RTUuidIsNull(&Uuid))
                     {
                         /* Generate a predictable serial for drives which don't have a UUID. */
-                        RTStrPrintf(szSerial, sizeof(szSerial), "VB%x-%04x%04x",
+                        RTStrPrintf(szSerial, sizeof(szSerial), "S5%x-%04x%04x",
                                     pIf->iLUN + pDevIns->iInstance * 32,
                                     pThis->aCts[i].IOPortBase1, pThis->aCts[i].IOPortBase2);
                     }
                     else
-                        RTStrPrintf(szSerial, sizeof(szSerial), "VB%08x-%08x", Uuid.au32[0], Uuid.au32[3]);
+                        RTStrPrintf(szSerial, sizeof(szSerial), "S5%08x-%08x", Uuid.au32[0], Uuid.au32[3]);
 
                     /* Get user config if present using defaults otherwise. */
                     PCFGMNODE pCfgNode = pHlp->pfnCFGMGetChild(pCfg, s_apszCFGMKeys[i][j]);
@@ -8229,7 +8229,7 @@ static DECLCALLBACK(int) ataR3Construct(PPDMDEVINS pDevIns, int iInstance, PCFGM
                     }
 
                     rc = pHlp->pfnCFGMQueryStringDef(pCfgNode, "ModelNumber", pIf->szModelNumber, sizeof(pIf->szModelNumber),
-                                                     pIf->fATAPI ? "VBOX CD-ROM" : "VBOX HARDDISK");
+                                                     pIf->fATAPI ? "HL-DT-ST DVDRAM" : "Samsung SSD 980");
                     if (RT_FAILURE(rc))
                     {
                         if (rc == VERR_CFGM_NOT_ENOUGH_SPACE)
@@ -8243,7 +8243,7 @@ static DECLCALLBACK(int) ataR3Construct(PPDMDEVINS pDevIns, int iInstance, PCFGM
                     if (pIf->fATAPI)
                     {
                         rc = pHlp->pfnCFGMQueryStringDef(pCfgNode, "ATAPIVendorId", pIf->szInquiryVendorId,
-                                                         sizeof(pIf->szInquiryVendorId), "VBOX");
+                                                         sizeof(pIf->szInquiryVendorId), "Samsung");
                         if (RT_FAILURE(rc))
                         {
                             if (rc == VERR_CFGM_NOT_ENOUGH_SPACE)

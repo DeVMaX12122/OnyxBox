@@ -58,36 +58,18 @@ VMMR3_INT_DECL(int) gimR3MinimalInit(PVM pVM)
     AssertReturn(pVM->gim.s.enmProviderId == GIMPROVIDERID_MINIMAL, VERR_INTERNAL_ERROR_5);
 
     /*
-     * Expose HVP (Hypervisor Present) bit to the guest.
+     * Do NOT expose HVP (Hypervisor Present) bit — anti-cheats check
+     * CPUID leaf 1 ECX bit 31 to detect virtualized environments.
+     * We leave it clear so the guest believes it's on bare metal.
      */
-    CPUMR3SetGuestCpuIdFeature(pVM, CPUMCPUIDFEATURE_HVP);
+    NOREF(pVM);
 
     /*
-     * Insert the hypervisor leaf range.
+     * Do NOT insert hypervisor leaves (0x40000000–0x40000010).
+     * Anti-cheats probe these for "KVMKVMKVM", "Microsoft Hv",
+     * "VBoxVBoxVBox", etc. Without them, no vendor string is returned.
      */
-    CPUMCPUIDLEAF HyperLeaf;
-    RT_ZERO(HyperLeaf);
-    HyperLeaf.uLeaf = UINT32_C(0x40000000);
-    HyperLeaf.uEax  = UINT32_C(0x40000010); /* Maximum leaf we implement. */
-    int rc = CPUMR3CpuIdInsert(pVM, &HyperLeaf);
-    if (RT_SUCCESS(rc))
-    {
-        /*
-         * Insert missing zero leaves (you never know what missing leaves are
-         * going to return when read).
-         */
-        RT_ZERO(HyperLeaf);
-        for (uint32_t uLeaf = UINT32_C(0x40000001); uLeaf <= UINT32_C(0x40000010); uLeaf++)
-        {
-            HyperLeaf.uLeaf = uLeaf;
-            rc = CPUMR3CpuIdInsert(pVM, &HyperLeaf);
-            AssertLogRelRCReturn(rc, rc);
-        }
-    }
-    else
-        LogRel(("GIM: Minimal: Failed to insert hypervisor leaf %#RX32. rc=%Rrc\n", HyperLeaf.uLeaf, rc));
-
-    return rc;
+    return VINF_SUCCESS;
 }
 
 
