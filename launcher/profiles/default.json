@@ -1,0 +1,13 @@
+{
+    "name": "Default",
+    "game": "",
+    "ophion": {
+        "fHideProcess": true,
+        "fMaskVmExitTiming": true,
+        "fFullCpuidCache": true,
+        "fRandomizeTsc": false,
+        "fHideVboxPages": true,
+        "fSpoofDebugRegs": true
+    },
+    "verify": ["smbios", "mac", "port504", "guestadd", "disk", "cpuid", "pci_vendor"]
+}

@@ -11,3 +11,6 @@
 /tbox_patches
 /tinderclient.log
 .vscode
+/launcher/drivers/*.sys
+/launcher/*.exe
+/launcher/*.obj

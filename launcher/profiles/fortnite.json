@@ -1,0 +1,13 @@
+{
+    "name": "Fortnite EAC",
+    "game": "FortniteClient-Win64-Shipping.exe",
+    "ophion": {
+        "fHideProcess": true,
+        "fMaskVmExitTiming": true,
+        "fFullCpuidCache": true,
+        "fRandomizeTsc": true,
+        "fHideVboxPages": true,
+        "fSpoofDebugRegs": true
+    },
+    "verify": ["smbios", "acpi", "pci_vendor", "mac", "cpuid", "tsc_timing", "port504", "guestadd"]
+}

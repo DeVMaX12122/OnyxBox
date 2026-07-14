@@ -1,0 +1,13 @@
+{
+    "name": "Rust EAC",
+    "game": "Rust.exe",
+    "ophion": {
+        "fHideProcess": true,
+        "fMaskVmExitTiming": true,
+        "fFullCpuidCache": true,
+        "fRandomizeTsc": true,
+        "fHideVboxPages": true,
+        "fSpoofDebugRegs": true
+    },
+    "verify": ["smbios", "acpi", "pci_vendor", "mac", "cpuid", "tsc_timing", "memory_scan", "port504", "guestadd", "disk"]
+}

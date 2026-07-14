@@ -1,0 +1,13 @@
+{
+    "name": "Valorant Vanguard",
+    "game": "VALORANT-Win64-Shipping.exe",
+    "ophion": {
+        "fHideProcess": true,
+        "fMaskVmExitTiming": false,
+        "fFullCpuidCache": true,
+        "fRandomizeTsc": false,
+        "fHideVboxPages": true,
+        "fSpoofDebugRegs": true
+    },
+    "verify": ["smbios", "pci_vendor", "cpuid", "tsc_timing", "memory_scan", "guestadd"]
+}
